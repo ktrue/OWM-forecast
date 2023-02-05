@@ -53,7 +53,7 @@ $refetchSeconds = 3600;                   // cache lifetime (3600sec = 60 minute
 //
 // Units: 
 // standard: SI units (K,m/s,hPa,mm,km)
-// metric: same as si, except that temperature in C,
+// metric: same as standard, except that temperature in C,
 // imperial: Imperial units (F,mph,inHg,in,miles)
 // 
 $showUnitsAs  = 'metric'; // ='imperial' for imperial, , ='metric' for metric, ='standard' for SI units
@@ -225,10 +225,10 @@ Ensure the permission on "OWM-forecast-json-{n}-{units}.txt" cache file(s) are a
 
 # Sample output
 ## English
-![English Sample Output]
+![English Sample Output](https://user-images.githubusercontent.com/17507343/216797785-88f522e2-7100-4026-8a6c-2256d5082abd.jpg)
 ## English (Hourly)
-![English Sample Output]
+![English Sample Output](https://user-images.githubusercontent.com/17507343/216797786-cadff259-e41d-438a-98a2-ba45333748fc.jpg)
 ## Ελληνικά (Greek)
-![Greek Sample Output]
+![Greek Sample Output](https://user-images.githubusercontent.com/17507343/216797787-6947f3c2-5fcc-4745-bbb2-17dd3d55653d.jpg)
 ## Ελληνικά (Greek) Hourly
-![Greek Sample Output]
+![Greek Sample Output](https://user-images.githubusercontent.com/17507343/216797788-fd75bd5b-3ffb-4780-a818-2acd3b7f6fb9.jpg)
