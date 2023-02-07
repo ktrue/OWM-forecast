@@ -119,7 +119,7 @@ ul.tabbernav li.tabberactive a:hover
 	$SITE['OWMAPIkey'] = 'specify-for-standalone-use-here'; // use this only for standalone 
 	$SITE['charset'] = 'UTF-8';
 	$SITE['lang'] = 'en';
-	$SITE['OWMshowUnitsAs'] = 'metric';
+	$SITE['OWMshowUnitsAs'] = 'ca';
   $SITE['OWMforecasts'] = array(
  // Location|lat,long  (separated by | characters)
 'Saratoga, CA, USA|37.27465,-122.02295',

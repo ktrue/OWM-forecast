@@ -15,8 +15,9 @@
 // Version 1.10 - 19-Jan-2022 - fix for PHP 8.1 Deprecated errata
 // Version 1.11 - 27-Dec-2022 - fixes for PHP 8.2
 // Version 2.00 - 04-Feb-2023 - rewrite for OpenWeatherMap API V3.0 use
+// Version 2.01 - 07-Feb-2023 - added units conversions and si,ca,uk,us for ShowUnitsAs compatibility
 //
-$Version = "OWM-forecast.php (ML) Version 2.00 - 04-Feb-2023";
+$Version = "OWM-forecast.php (ML) Version 2.01 - 07-Feb-2023";
 //
 // error_reporting(E_ALL);  // uncomment to turn on full error reporting
 //
@@ -113,13 +114,14 @@ $cacheFileDir = './';                     // default cache file directory
 $cacheName = "OWM-forecast-json.txt";      // locally cached page from OWM
 $refetchSeconds = 3600;                   // cache lifetime (3600sec = 60 minutes)
 //
-// Units: 
-// standard: SI units (K,m/s,hPa,mm,km)
-// metric: same as si, except that temperature in C,
-// imperial: Imperial units (F,mph,inHg,in,miles)
+// Units: Temp,Baro,Wind,Rain,Snow,Distance
+// 'si' = C,hPa,m/s,mm,mm,km
+// 'ca' = C,hPa,km/h,mm,mm,km
+// 'uk' = C,mb,mph,mm,mm,km
+// 'us' = F,inHg,mph,in,in,km
 // 
-$showUnitsAs  = 'metric'; // ='imperial' for imperial, , ='metric' for metric, ='standard' for SI units
-//
+$showUnitsAs  = 'ca'; //
+
 $charsetOutput = 'ISO-8859-1';        // default character encoding of output
 //$charsetOutput = 'UTF-8';            // for standalone use if desired
 $lang = 'en';	// default language
@@ -187,21 +189,18 @@ if(preg_match('|specify|i',$OWMAPIkey)) {
 	return;
 }
 
-$windUnits = array(
- 'imperial' => 'mph',
- 'metric' => 'm/s',
- 'standard' => 'm/s',
-);
 $UnitsTab = array(
- 'standard' => array('T'=>'&deg;K','W'=>'m/s','P'=>'hPa','R'=>'mm','D'=>'km'),
- 'metric' => array('T'=>'&deg;C','W'=>'m/s','P'=>'hPa','R'=>'mm','D'=>'km'),
- 'imperial' => array('T'=>'&deg;F','W'=>'mph','P'=>'inHg','R'=>'in','D'=>'km'),
+ 'si' => array('U'=>'metric','T'=>'&deg;C','W'=>'m/s','P'=>'hPa','R'=>'mm','D'=>'km','S'=>'mm'),
+ 'ca' => array('U'=>'metric','T'=>'&deg;C','W'=>'km/h','P'=>'hPa','R'=>'mm','D'=>'km','S'=>'mm'),
+ 'uk' => array('U'=>'metric','T'=>'&deg;C','W'=>'mph','P'=>'mb','R'=>'mm','D'=>'km','S'=>'cm'),
+ 'us' => array('U'=>'imperial','T'=>'&deg;F','W'=>'mph','P'=>'inHg','R'=>'in','D'=>'km','S'=>'in'),
 );
+
 
 if(isset($UnitsTab[$showUnitsAs])) {
   $Units = $UnitsTab[$showUnitsAs];
 } else {
-	$Units = $UnitsTab['metric'];
+	$Units = $UnitsTab['ca'];
 }
 
 if(!function_exists('langtransstr')) {
@@ -329,10 +328,11 @@ $doDebug = false;
 if (isset($_REQUEST['debug']) and strtolower($_REQUEST['debug'])=='y' ) {
   $doDebug = true;
 }
-$showTempsAs = ($showUnitsAs == 'us')? 'F':'C';
-$Status .= "<!-- temps in $showTempsAs -->\n";
 
 list($OWMlat,$OWMlong) = explode(',',$OWM_LATLONG);
+$showUnitsAs = $Units['U'];  // convert to 'imperial' or 'metric' (we don't use 'standard' for API)
+$showTempsAs = ($showUnitsAs == 'imperial')? 'F':'C';
+$Status .= "<!-- temps in $showTempsAs -->\n";
 $fileName = "https://api.openweathermap.org/data/3.0/onecall?lat=$OWMlat&lon=$OWMlong&exclude=minutely" .
   "&units=$showUnitsAs&lang=$OWMLANG&appid=$OWMAPIkey";
 
@@ -359,7 +359,7 @@ if ($autoSetTemplate and isset($_SESSION['CSSwidescreen'])) {
 }
 
 $cacheName = $cacheFileDir . $cacheName;
-$cacheName = preg_replace('|\.txt|is',"-$haveIndex-$showUnitsAs-$lang.txt",$cacheName); // unique cache per language used
+$cacheName = preg_replace('|\.txt|is',"-$haveIndex-$showUnitsAs-$lang.txt",$cacheName); // unique cache per units & language used
 
 $APIfileName = $fileName; 
 
@@ -524,15 +524,11 @@ if(isset($JSON['daily'][0]['dt'])) { // got good JSON .. process it
 	if($doDebug) {
 		$Status .= "\n<!-- JSON daily count=" . count( $JSON['daily']) . "-->\n";
 	}
-	if(isset($windUnits[$showUnitsAs])) {
-		$windUnit = $windUnits[$showUnitsAs];
-		$Status .= "<!-- wind unit for '$showUnitsAs' set to '$windUnit' -->\n";
-		if(isset($tranTab[$windUnit])) {
-			$windUnit = $tranTab[$windUnit];
-			$Status .= "<!-- wind unit translation for '$showUnitsAs' set to '$windUnit' -->\n";
-		}
-	} else {
-		$windUnit = '';
+	$windUnit = $Units['W'];
+	$Status .= "<!-- wind unit for '$showUnitsAs' set to '$windUnit' -->\n";
+	if(isset($tranTab[$windUnit])) {
+		$windUnit = $tranTab[$windUnit];
+		$Status .= "<!-- wind unit translation for '$showUnitsAs' set to '$windUnit' -->\n";
 	}
 
   $n = 0;
@@ -607,14 +603,19 @@ if(isset($JSON['daily'][0]['dt'])) { // got good JSON .. process it
 		if(!empty($OWMforecastpreciptype[$n])) {
 			$t = explode(',',$OWMforecastpreciptype[$n].',');
 			foreach ($t as $k => $ptype) {
-				if(!empty($ptype)) {$tstr .= $tranTab[$ptype].' '.$FCpart[$ptype].'mm,';}
-			}
-			if(strlen($tstr)>0) {
-				$tstr = '('.substr($tstr,0,strlen($tstr)-1) .') ';
+				if(!empty($ptype)) {
+				  if($ptype == 'rain') {$useUnit = $Units['R'];} else {$useUnit = $Units['S'];}
+					$tstr .= $tranTab[$ptype].' '.OWM_rain_convert($FCpart[$ptype],$useUnit).$useUnit.',';
+				}
 			}
 		}
+		if(strlen($tstr)>0) {
+			$tstr = ' ('.substr($tstr,0,strlen($tstr)-1) .').';
+		} else {
+			$tstr = '.';
+		}
 		$OWMforecasttext[$n] .= " ".
-		   $tranTab['Chance of precipitation']." $tstr".$OWMforecastpop[$n]."%. ";
+		   $tranTab['Chance of precipitation']." ".$OWMforecastpop[$n]."%$tstr";
 	}
 
   $OWMforecasttext[$n] .= " ".$tranTab['High:']." ".OWM_round($FCpart['temp']['max'],0)."&deg;$showTempsAs. ";
@@ -624,7 +625,7 @@ if(isset($JSON['daily'][0]['dt'])) { // got good JSON .. process it
 	$tWdir = OWM_WindDir(round($FCpart['wind_deg'],0));
   $OWMforecasttext[$n] .= " ".$tranTab['Wind']." ".OWM_WindDirTrans($tWdir);
   $OWMforecasttext[$n] .= " ".
-	     round($FCpart['wind_speed'],0)."-&gt;".round($FCpart['wind_gust'],0) .
+	     OWM_wind_convert($FCpart['wind_speed'],$Units['W'])."-&gt;".OWM_wind_convert($FCpart['wind_gust'],$Units['W']) .
 	     " $windUnit.";
 
 	if(isset($FCpart['uvi']) and $FCpart['uvi'] > 1) {
@@ -640,6 +641,9 @@ if(isset($JSON['daily'][0]['dt'])) { // got good JSON .. process it
 	}
 
 	$OWMforecastcond[$n] = $FCpart['weather'][0]['description'];
+  if($doIconv) {
+		$OWMforecastcond[$n] = iconv("UTF-8",$charsetOutput.'//IGNORE',$OWMforecastcond[$n]);
+	}
 	if ($doDebug) {
       $Status .= "<!-- forecastcond[$n]='" . $OWMforecastcond[$n] . "' -->\n";
 	}
@@ -756,9 +760,9 @@ if (isset($currently['dt']) ) { // only generate if we have the data
 	if (isset($currently['wind_speed'])) {
 		$tWdir = OWM_WindDir(round($currently['wind_deg'],0));
 		$OWMcurrentConditions .= $tranTab['Wind'].": <b>".OWM_WindDirTrans($tWdir);
-		$OWMcurrentConditions .= " ".round($currently['wind_speed'],0);
+		$OWMcurrentConditions .= " ".OWM_wind_convert($currently['wind_speed'],$Units['W']);
 		if(isset($currently['wind_gust'])) {
-			 $OWMcurrentConditions .= "-&gt;".round($currently['wind_gust'],0);
+			 $OWMcurrentConditions .= "-&gt;".OWM_wind_convert($currently['wind_gust'],$Units['W']);
 		}
 		$OWMcurrentConditions .=  " $windUnit.</b><br/>\n";
 	}
@@ -1936,7 +1940,7 @@ function OWM_conv_baro($hPa) {
 	# even 'us' imperial returns pressure in hPa so we need to convert
 	global $showUnitsAs;
 	
-	if($showUnitsAs == 'us') {
+	if($showUnitsAs == 'imperial') {
 		$t = (float)$hPa * 0.02952998751;
 		return(sprintf("%01.2f",$t));
 	} else {
@@ -1977,7 +1981,7 @@ function OWM_gen_hourforecast($FCpart) {
   $OWMH = array();
 	
   //$newIcon = '<td>';
-  if($showUnitsAs == 'us') {
+  if($showUnitsAs == 'imperial') {
 	  $t = explode(' ',date('g:ia n/j l',$FCpart['dt']));
 	} else {
 	  $t = explode(' ',date('H:i j/n l',$FCpart['dt']));
@@ -2011,16 +2015,16 @@ function OWM_gen_hourforecast($FCpart) {
 	$tWdir = OWM_WindDir(round($FCpart['wind_deg'],0));
   $OWMH['wind'] = $tranTab['Wind']." <b>".OWM_WindDirTrans($tWdir);
   $OWMH['wind'] .= " ".
-	     round($FCpart['wind_speed'],0)."-&gt;".round($FCpart['wind_gust'],0) .
+	     OWM_wind_convert($FCpart['wind_speed'],$Units['W'])."-&gt;".OWM_wind_convert($FCpart['wind_gust'],$Units['W']) .
 	     "</b> $windUnit\n";
 
   $preciptype = '';
 	if(isset($FCpart['rain']['1h'])) {
-		$preciptype .= $tranTab['rain'] . ': '. $FCpart['rain']['1h'] . 'mm,';
+		$preciptype .= $tranTab['rain'] . ': '. OWM_rain_convert($FCpart['rain']['1h'],$Units['R']) . $Units['R'].',';
 	}
 
 	if(isset($FCpart['snow']['1h'])) {
-		$preciptype .= $tranTab['snow'] . ': '. $FCpart['snow']['1h'] . 'mm,';
+		$preciptype .= $tranTab['snow'] . ': '. OWM_rain_convert($FCpart['snow']['1h'],$Units['S']) . $Units['S'].',';
 	}
 
 	$accum = '';
@@ -2039,6 +2043,19 @@ function OWM_gen_hourforecast($FCpart) {
   $OWMH['precip'] = "$accum";
 	//$newIcon .= "</td>\n";
 	return($OWMH);
+}
+
+// ------------------------------------------------------------------
+
+Function OWM_rain_convert($in,$unit) {
+	// input is always in MM
+	if(strpos($unit,'in') !== false) {
+		return (sprintf("%01.2f",round($in/25.4,2)));
+	} elseif(strpos($unit,'cm') !== false) {
+		return(sprintf("%01.1f",round($in,1)/10.0));
+	} else {
+	  return (sprintf("%01.1f",round($in,1)));
+  }
 }
 
 // ------------------------------------------------------------------
@@ -2071,6 +2088,32 @@ function OWM_gen_hourforecast($FCpart) {
 
   return("<img src=\"$iconDir$newicon\" width=\"55\" height=\"55\" 
   alt=\"$OWMcondtext\" title=\"$OWMcondtext\"/>"); 
+}
+
+// -------------------------------------------------------------------------------------------
+   
+function OWM_wind_convert ($in,$unit) {
+  global $showUnitsAs;
+	if ($showUnitsAs == 'imperial') {
+		return(round($in,0));
+	}
+		switch ($unit) {
+			case '': 
+			  return(round($in,0)); 
+				break; 
+			case 'm/s': 
+			  return(round($in,1)); 
+				break;
+			case 'km/h': 
+			  return(round($in*3.6,0)); 
+				break;
+			case 'mph': 
+			  return(round($in*2.237,0)); 
+				break;
+			default: 
+			  return(round($in,0));
+	}
+	return(round($in,1)); // for standard in m/s
 }
 
 // -------------------------------------------------------------------------------------------

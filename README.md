@@ -37,7 +37,15 @@ $OWMforecasts = array(
  // Location|lat,long  (separated by | characters)
 'Saratoga, CA, USA|37.27465,-122.02295',
 'Auckland, NZ|-36.910,174.771', // Awhitu, Waiuku New Zealand
-...
+'Assen, NL|53.02277,6.59037',
+'Blankenburg, DE|51.8089941,10.9080649',
+'Cheyenne, WY, USA|41.144259,-104.83497',
+'Carcassonne, FR|43.2077801,2.2790407',
+'Braniewo, PL|54.3793635,19.7853585',
+'Omaha, NE, USA|41.19043,-96.13114',
+'Johanngeorgenstadt, DE|50.439339,12.706085',
+'Athens, GR|37.97830,23.715363',
+'Haifa, IL|32.7996029,34.9467358',
 ); 
 
 //
@@ -51,13 +59,14 @@ $cacheFileDir = './';                     // default cache file directory
 $cacheName = "OWM-forecast-json.txt";      // locally cached page from OWM
 $refetchSeconds = 3600;                   // cache lifetime (3600sec = 60 minutes)
 //
-// Units: 
-// standard: SI units (K,m/s,hPa,mm,km)
-// metric: same as standard, except that temperature in C,
-// imperial: Imperial units (F,mph,inHg,in,miles)
+// Units: Temp,Baro,Wind,Rain,Snow,Distance
+// 'si' = C,hPa,m/s,mm,mm,km
+// 'ca' = C,hPa,km/h,mm,mm,km
+// 'uk' = C,mb,mph,mm,mm,km
+// 'us' = F,inHg,mph,in,in,km
 // 
-$showUnitsAs  = 'metric'; // ='imperial' for imperial, , ='metric' for metric, ='standard' for SI units
-//
+$showUnitsAs  = 'ca'; //
+
 $charsetOutput = 'ISO-8859-1';        // default character encoding of output
 //$charsetOutput = 'UTF-8';            // for standalone use if desired
 $lang = 'en';	// default language
@@ -77,9 +86,9 @@ You DO have to add a **$SITE['OWMAPIkey'] = '_your-key-here_';** and a **$SITE['
 <dt>$OWMAPIkey = 'specify-for-standalone-use-here';</dt>
 
 <dd>This setting is for **standalone** use (do not change this for Saratoga templates).  
-Register for a Pirateweather API Key at https://openweathermap.org and replace _specify-for-standalone-use-here_ with the registered API key. The script will nag you if this has not been done.  
+Register for a openweathermap API Key at https://openweathermap.org and replace _specify-for-standalone-use-here_ with the registered API key. The script will nag you if this has not been done.  
 
-**For Saratoga template users**, do the registration at the Pirateweather API site above, then put your API key in your _Settings.php_ as:  
+**For Saratoga template users**, do the registration at the openweathermap API site above, then put your API key in your _Settings.php_ as:  
 
 $SITE['OWMAPIkey'] = '_your-key-here_';  
 
@@ -130,14 +139,16 @@ Include the trailing slash in the directory specification.
 
 <dt>$refetchSeconds</dt>
 
-<dd>This variable specifies the cache lifetime, or how long to use the cache before reloading a copy from Pirateweather. The default is 3600 seconds (60 minutes). Forecasts don't change very often, so please don't reduce it below 60 minutes to minimize your API access count and keep it to the free Developer API range.</dd>
+<dd>This variable specifies the cache lifetime, or how long to use the cache before reloading a copy from openweathermap. The default is 3600 seconds (60 minutes). Forecasts don't change very often, so please don't reduce it below 60 minutes to minimize your API access count and keep it to the free Developer API range.</dd>
 
 <dt>$showUnitsAs</dt>
 
 <dd>This setting controls the units of measure for the forecasts. <br> 
- ='standard' SI units (K,m/s,hPa,mm,km)<br>  
- ='metric' same as si, except that temperature in C <br> 
-  ='imperial' Imperial units (F,mph,inHg,in,miles)<br>
+ Units: Temp,Baro,Wind,Rain,Snow,Distance<br>
+ 'si' = C,hPa,m/s,mm,mm,km<br>
+ 'ca' = C,hPa,km/h,mm,mm,km<br>
+ 'uk' = C,mb,mph,mm,mm,km<br>
+ 'us' = F,inHg,mph,in,in,km<br>
 <br>
 **Saratoga template users:** This setting will be overridden by the **$SITE['OWMshowUnitsAs']** specified in your _Settings.php_.  
 </dd>
