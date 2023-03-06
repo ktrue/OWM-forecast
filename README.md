@@ -8,9 +8,13 @@ Afrikaans | български език | český jazyk | Català | Dansk | Nede
 In order to use this script you need to:
 
 1.  Register for and acquire a free OpenWeatherMap.org API key.
+
     1.  Browse to [https://openweathermap.org](https://openweathermap.org) and sign up/in to acquire an API key.
-    2.  insert the API key in **$OWMAPIkey** in the OWM-forecast.php script or as **$SITE['OWMAPIkey']** in _Settings.php_ for Saratoga template users.
-    3.  Customize the **$OWMforecasts** array (or **$SITE['OWMforecasts']** in _Settings.php_) with the location names, latitude/longitude for your forecasts. The first entry will be the default one for forecasts.
+    2.  Using the OWM site, subscribe the API key to your account to activate it for API usage.
+        You'll see a message like the following if you have not subscribed the API feed in your OpenWeatherMap account:
+        ![OWM-401-error](https://user-images.githubusercontent.com/17507343/223267899-1a1b0415-3d46-4785-b80f-bcb6d09ad161.jpg)
+    3.  insert the API key in **$OWMAPIkey** in the OWM-forecast.php script or as **$SITE['OWMAPIkey']** in _Settings.php_ for Saratoga template users.
+    4.  Customize the **$OWMforecasts** array (or **$SITE['OWMforecasts']** in _Settings.php_) with the location names, latitude/longitude for your forecasts. The first entry will be the default one for forecasts.
 2.  Use this script ONLY on your personal, non-commercial weather station website.
 3.  Leave attribution (and hotlink) to OpenWeatherMap.org as the source of the data in the output of the script.
 
