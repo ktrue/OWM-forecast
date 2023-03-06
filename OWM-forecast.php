@@ -16,8 +16,9 @@
 // Version 1.11 - 27-Dec-2022 - fixes for PHP 8.2
 // Version 2.00 - 04-Feb-2023 - rewrite for OpenWeatherMap API V3.0 use
 // Version 2.01 - 07-Feb-2023 - added units conversions and si,ca,uk,us for ShowUnitsAs compatibility
+// Version 2.02 - 06-Mar-2023 - added diagnostics for 40x API failures
 //
-$Version = "OWM-forecast.php (ML) Version 2.01 - 07-Feb-2023";
+$Version = "OWM-forecast.php (ML) Version 2.02 - 06-Mar-2023";
 //
 // error_reporting(E_ALL);  // uncomment to turn on full error reporting
 //
@@ -397,6 +398,24 @@ if (! $Force and file_exists($cacheName) and filemtime($cacheName) + $refetchSec
 		  }
 	   }
     }
+		if(strpos($RC,'200') === false) {
+			$stuff = explode("\r\n\r\n",$html); // maybe we have more than one header due to redirects.
+      $content = (string)array_pop($stuff); // last one is the content
+      $headers = (string)array_pop($stuff); // next-to-last-one is the headers
+      $rawJSON = $content;
+      $Status .= "<!-- rawJSON size is ".strlen($rawJSON). " bytes -->\n";
+			$JSON = json_decode($rawJSON,true);
+			if(isset($JSON['cod']) and isset($JSON['message'])) {
+				print $Status;
+				print "<p><b>Error: code=".$JSON['cod']."</b><br/>\n";
+				print "<b>Message:</b> ".$JSON['message']."<br/>\n";
+				print "Correct the error to obtain a forecast.</p>\n";
+			} else {
+				print "<p> ERROR: Raw JSON returns<br/>\n".$rawJSON."<br/>Correct the error to obtain forecast.</p>\n";
+			}
+			return;
+		}
+
 		if(preg_match('!pressure!is',$html)) {
       $fp = fopen($cacheName, "w"); 
 			if (!$fp) { 
@@ -414,7 +433,7 @@ if (! $Force and file_exists($cacheName) and filemtime($cacheName) + $refetchSec
 			} else {
 				$Status .= "<!-- cache $cacheName missing or contains invalid contents -->\n";
 				print $Status;
-				print "<p>Sorry.. the DarkSky forecast is not available.</p>\n";
+				print "<p>Sorry.. the OpenWeatherMap forecast is not available.</p>\n";
 				return;
 			}
 		}
