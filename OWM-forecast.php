@@ -17,8 +17,9 @@
 // Version 2.00 - 04-Feb-2023 - rewrite for OpenWeatherMap API V3.0 use
 // Version 2.01 - 07-Feb-2023 - added units conversions and si,ca,uk,us for ShowUnitsAs compatibility
 // Version 2.02 - 06-Mar-2023 - added diagnostics for 40x API failures
+// Version 2.03 - 21-May-2026 - fixes for PHP 8.5
 //
-$Version = "OWM-forecast.php (ML) Version 2.02 - 06-Mar-2023";
+$Version = "OWM-forecast.php (ML) Version 2.03 - 21-May-2026";
 //
 // error_reporting(E_ALL);  // uncomment to turn on full error reporting
 //
@@ -1457,7 +1458,7 @@ Array
     " secs -->\n";
 
   //$Status .= "<!-- curl info\n".print_r($cinfo,true)." -->\n";
-  curl_close($ch);                                              // close the cURL session
+  if(PHP_MAJOR_VERSION < 8) {curl_close($ch); }// close the cURL session
   //$Status .= "<!-- raw data\n".$data."\n -->\n"; 
   $i = strpos($data,"\r\n\r\n");
   $headers = substr($data,0,$i);
@@ -1876,7 +1877,7 @@ function OWM_WindDir ($degrees) {
   }
   $windlabel = array ("N","NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S",
 	 "SSW","SW", "WSW", "W", "WNW", "NW", "NNW");
-  $dir = $windlabel[ (integer)fmod((($winddir + 11) / 22.5),16) ];
+  $dir = $windlabel[ (int)fmod((($winddir + 11) / 22.5),16) ];
   return($dir);
 
 } // end function OWM_WindDir
